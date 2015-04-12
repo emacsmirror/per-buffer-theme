@@ -48,18 +48,32 @@
   "Theme in use.")
 
 ;;; Customization
-(defvar per-buffer-theme/default-theme 'inigo
-  "Default theme to be used if no matching is found.")
-(defvar per-buffer-theme/ignored-buffernames-regex '("^*mini" "^*Mini" "^*helm" "^*Helm")
-  "If current buffer name matches one of these it won't change the theme.")
-(defvar per-buffer-theme/themes-plist
+(defgroup per-buffer-theme nil
+  "Change theme according to buffer name or major mode."
+  :link '(emacs-library-link :tag "Source Lisp File" "per-buffer-theme.el")
+  :prefix "per-buffer-theme/"
+  :group 'customize)
+
+(defcustom per-buffer-theme/default-theme 'inigo
+  "Default theme to be used if no matching is found."
+  :type 'symbol
+  :group 'per-buffer-theme)
+
+(defcustom per-buffer-theme/ignored-buffernames-regex '("^*mini" "^*Mini" "^*helm" "^*Helm")
+  "If current buffer name matches one of these it won't change the theme."
+  :type '(repeat string)
+  :group 'per-buffer-theme)
+
+(defcustom per-buffer-theme/themes-plist
   '(notheme ((:buffernames . ("^*eww" "^*w3m" "^*mu4e"))
              (:modes . (eww-mode w3m-mode cfw:calendar-mode
                         mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
     adwaita ((:buffernames . ("*Help*"))
              (:modes . (nil))))
   "A plist with default associations theme <-> alist_of_(buffernames modes).
-Special `notheme' theme can be used to unload all themes.")
+Special `notheme' theme can be used to unload all themes."
+  :type 'plist
+  :group 'per-buffer-theme)
 
 ;;; Internal functions
 (defun pbt~match-theme ()
