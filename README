@@ -24,15 +24,15 @@ Change theme according to active buffer name or major mode.
 the global theme according to buffer name or major mode.
 
 It runs through *window-configuration-change-hook* so it is not perfect.
-If buffer name matches any of *pbt/ignored-buffernames-regex* no theme
-change occurs.
 
-Customizable variable *pbt/themes-plist* contains the association
-between themes and buffer name or major modes.
+If buffer name matches any of *per-buffer-theme/ignored-buffernames-regex*
+no theme change occurs.
 
-Special *notheme* theme can be used to make unload all themes and use emacs
-default theme.
+Customizable variable *per-buffer-theme/themes-plist* contains the
+association between themes and buffer name or major modes.
 
-If no theme matches then it'll load the theme stored in *pbt/default-theme*.
-If none is found uses default theme stored in `pbt/default-theme'.
-Special `notheme' theme can be used to disable all loaded themes."
+Special *notheme* theme can be used to make unload all themes and use
+emacs default theme.
+
+If no theme matches then it'll load the theme stored in
+*per-buffer-theme/default-theme*.

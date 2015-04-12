@@ -26,26 +26,33 @@
 ;; the global theme according to buffer name or major mode.
 ;;
 ;; It runs through `window-configuration-change-hook' so it is not perfect.
-;; If buffer name matches any of `pbt/ignored-buffernames-regex' no theme
-;; change occurs.
-;; Customizable variable `pbt/themes-plist' contains the association
-;; between themes and buffer name or major modes.
+;;
+;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
+;; no theme change occurs.
+;;
+;; Customizable variable `per-buffer-theme/themes-plist' contains the
+;; association between themes and buffer name or major modes.
+;;
 ;; Special `notheme' theme can be used to make unload all themes and use emacs
 ;; default theme.
-;; If no theme matches then it'll load the theme stored in `pbt/default-theme'.
+;;
+;; If no theme matches then it'll load the theme stored in
+;; `per-buffer-theme/default-theme'.
 
 
 ;;; Code:
 (require 'cl-lib)
 
-;;; Variables and customization
+;;; Variables
 (defvar pbt/current-theme nil
   "Theme in use.")
-(defvar pbt/default-theme 'inigo
+
+;;; Customization
+(defvar per-buffer-theme/default-theme 'inigo
   "Default theme to be used if no matching is found.")
-(defvar pbt/ignored-buffernames-regex '("^*mini" "^*Mini" "^*helm" "^*Helm")
+(defvar per-buffer-theme/ignored-buffernames-regex '("^*mini" "^*Mini" "^*helm" "^*Helm")
   "If current buffer name matches one of these it won't change the theme.")
-(defvar pbt/themes-plist
+(defvar per-buffer-theme/themes-plist
   '(notheme ((:buffernames . ("^*eww" "^*w3m" "^*mu4e"))
              (:modes . (eww-mode w3m-mode cfw:calendar-mode
                         mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
@@ -56,8 +63,9 @@ Special `notheme' theme can be used to unload all themes.")
 
 ;;; Internal functions
 (defun pbt~match-theme ()
-  "Return theme if buffer name or major-mode match in `pbt/themes-plist' or nil."
-  (let ((plist pbt/themes-plist)
+  "Return theme if buffer name or major-mode match in
+`per-buffer-theme/themes-plist' or nil."
+  (let ((plist per-buffer-theme/themes-plist)
         the-theme)
     ;; (message "THEMES: %s" (prin1-to-string plist))
     (while plist
@@ -80,28 +88,30 @@ Special `notheme' theme can be used to unload all themes.")
     the-theme))
 
 ;;; Public interface
-(defun pbt/change-theme-if-buffer-matches ()
+(defun per-buffer-theme/change-theme-if-buffer-matches ()
   "Change theme according to active buffer major mode or name.
-Don't do anything if buffer name matches in `pbt/ignored-buffernames-regex'.
-Search for theme matches in `pbt/themes-plist' customizable variable.
-If none is found uses default theme stored in `pbt/default-theme'.
+Don't do anything if buffer name matches in
+`per-buffer-theme/ignored-buffernames-regex'.
+Search for theme matches in `per-buffer-theme/themes-plist'
+customizable variable.
+If none is found uses default theme stored in `per-buffer-theme/default-theme'.
 Special `notheme' theme can be used to disable all loaded themes."
   (interactive)
-  (unless (cl-some (lambda (regex) (string-match regex (buffer-name))) pbt/ignored-buffernames-regex)
+  (unless (cl-some (lambda (regex) (string-match regex (buffer-name))) per-buffer-theme/ignored-buffernames-regex)
     (let ((theme (pbt~match-theme)))
       (unless (equal pbt/current-theme theme)
         (cond
          ((equal theme 'notheme)
           (mapc #'disable-theme custom-enabled-themes))
          ((equal theme nil)
-          (load-theme pbt/default-theme t))
+          (load-theme per-buffer-theme/default-theme t))
          (t
           (load-theme theme t)))
         (setq pbt/current-theme theme)))))
 
 ;;; Hooks and key bindings
-(add-hook 'window-configuration-change-hook 'pbt/change-theme-if-buffer-matches)
-;; (global-set-key '[C-f3] 'pbt/change-theme-if-buffer-matches)
+(add-hook 'window-configuration-change-hook 'per-buffer-theme/change-theme-if-buffer-matches)
+;; (global-set-key '[C-f3] 'per-buffer-theme/change-theme-if-buffer-matches)
 
 (provide 'per-buffer-theme)
 ;;; per-buffer-theme.el ends here
