@@ -70,7 +70,7 @@
   :type 'symbol
   :group 'per-buffer-theme)
 
-(defcustom per-buffer-theme/ignored-buffernames-regex '("^*mini" "^*Mini" "^*helm" "^*Helm")
+(defcustom per-buffer-theme/ignored-buffernames-regex '("*mini" "*Mini" "*helm" "*Helm")
   "If current buffer name matches one of these it won't change the theme."
   :type '(repeat string)
   :group 'per-buffer-theme)
