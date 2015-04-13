@@ -22,6 +22,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
 ;; `per-buffer-theme.el' is an Emacs library that automatically changes
 ;; the global theme according to buffer name or major mode.
 ;;
@@ -30,7 +31,7 @@
 ;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
 ;; no theme change occurs.
 ;;
-;; Customizable variable `per-buffer-theme/themes-plist' contains the
+;; Customizable variable `per-buffer-theme/themes-alist' contains the
 ;; association between themes and buffer name or major modes.
 ;;
 ;; Special `notheme' theme can be used to make unload all themes and use emacs
@@ -38,6 +39,12 @@
 ;;
 ;; If no theme matches then it'll load the theme stored in
 ;; `per-buffer-theme/default-theme'.
+
+;;; Updates:
+
+;; 2015/04/12 Initial version.
+;; 2015/04/13 Changed `per-buffer-theme/theme-list' data type from plist
+;;            to alist to make customization easier.
 
 
 ;;; Code:
@@ -64,27 +71,28 @@
   :type '(repeat string)
   :group 'per-buffer-theme)
 
-(defcustom per-buffer-theme/themes-plist
-  '(notheme ((:buffernames . ("^*eww" "^*w3m" "^*mu4e"))
-             (:modes . (eww-mode w3m-mode cfw:calendar-mode
-                        mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
-    adwaita ((:buffernames . ("*Help*"))
-             (:modes . (nil))))
-  "A plist with default associations theme <-> alist_of_(buffernames modes).
+(defcustom per-buffer-theme/themes-alist
+      '(((:theme . notheme)
+         (:buffernames . ("^*eww" "^*w3m" "^*mu4e"))
+         (:modes . (eww-mode w3m-mode cfw:calendar-mode mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
+        ((:theme . adwaita)
+         (:buffernames . ("*Help*"))
+         (:modes . (nil))))
+  "An alist with default associations (theme buffernames modes).
 Special `notheme' theme can be used to unload all themes."
-  :type 'plist
+  :type '(repeat alist)
   :group 'per-buffer-theme)
 
 ;;; Internal functions
 (defun pbt~match-theme ()
   "Return theme if buffer name or major-mode match in
-`per-buffer-theme/themes-plist' or nil."
-  (let ((plist per-buffer-theme/themes-plist)
+`per-buffer-theme/themes-alist' or nil."
+  (let ((alist per-buffer-theme/themes-alist)
         the-theme)
-    ;; (message "THEMES: %s" (prin1-to-string plist))
-    (while plist
-      (let* ((theme (pop plist))
-             (props (pop plist))
+    ;; (message "THEMES: %s" (prin1-to-string alist))
+    (while alist
+      (let* ((props (pop alist))
+             (theme (cdr (assoc :theme props)))
              (buffernames (cdr (assoc :buffernames props)))
              (modes (cdr (assoc :modes props))))
         ;; (message "Theme: %s" (prin1-to-string theme))
@@ -94,11 +102,11 @@ Special `notheme' theme can be used to unload all themes."
         (when (cl-some (lambda (regex) (string-match regex (buffer-name))) buffernames)
           ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name)) theme)
           (setq the-theme theme
-                plist nil))
+                alist nil))
         (when (member major-mode modes)
           ;; (message "=> Matched with major mode '%s' => Theme: %s " major-mode theme)
           (setq the-theme theme
-                plist nil))))
+                alist nil))))
     the-theme))
 
 ;;; Public interface
@@ -106,7 +114,7 @@ Special `notheme' theme can be used to unload all themes."
   "Change theme according to active buffer major mode or name.
 Don't do anything if buffer name matches in
 `per-buffer-theme/ignored-buffernames-regex'.
-Search for theme matches in `per-buffer-theme/themes-plist'
+Search for theme matches in `per-buffer-theme/themes-alist'
 customizable variable.
 If none is found uses default theme stored in `per-buffer-theme/default-theme'.
 Special `notheme' theme can be used to disable all loaded themes."

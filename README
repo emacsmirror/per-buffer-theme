@@ -28,7 +28,7 @@ It runs through *window-configuration-change-hook* so it is not perfect.
 If buffer name matches any of *per-buffer-theme/ignored-buffernames-regex*
 no theme change occurs.
 
-Customizable variable *per-buffer-theme/themes-plist* contains the
+Customizable variable *per-buffer-theme/themes-alist* contains the
 association between themes and buffer name or major modes.
 
 Special *notheme* theme can be used to make unload all themes and use
