@@ -92,26 +92,25 @@ Special `notheme' theme can be used to unload all themes."
   "Return theme if buffer name or major-mode match in
 `per-buffer-theme/themes-alist' or nil."
   (let ((alist per-buffer-theme/themes-alist)
-        the-theme)
+        newtheme)
     ;; (message "THEMES: %s" (prin1-to-string alist))
     (while alist
-      (let* ((props (pop alist))
-             (theme (cdr (assoc :theme props)))
-             (buffernames (cdr (assoc :buffernames props)))
-             (modes (cdr (assoc :modes props))))
+      (let* ((elm (pop alist))
+             (theme (cdr (assoc :theme elm)))
+             (buffernames (cdr (assoc :buffernames elm)))
+             (modes (cdr (assoc :modes elm))))
         ;; (message "Theme: %s" (prin1-to-string theme))
-        ;; (message "  Properties: %s" (prin1-to-string props))
         ;; (message "    Buffer names: %s" (prin1-to-string buffernames))
         ;; (message "    Major modes: %s" (prin1-to-string modes))
         (when (cl-some (lambda (regex) (string-match regex (buffer-name))) buffernames)
           ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name)) theme)
-          (setq the-theme theme
+          (setq newtheme theme
                 alist nil))
         (when (member major-mode modes)
           ;; (message "=> Matched with major mode '%s' => Theme: %s " major-mode theme)
-          (setq the-theme theme
+          (setq newtheme theme
                 alist nil))))
-    the-theme))
+    newtheme))
 
 ;;; Public interface
 (defun per-buffer-theme/change-theme-if-buffer-matches ()
