@@ -3,10 +3,12 @@
 ;; Copyright (C) 2015 Free Software Foundation, Inc.
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
-;; URL: http://bitbucket/inigoserna/per-buffer-theme.el
-;; Version: 1.0
+;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
+;; Version: 1.1
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
+
+;; This file is not part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -45,6 +47,8 @@
 ;; 2015/04/12 Initial version.
 ;; 2015/04/13 Changed `per-buffer-theme/theme-list' data type from plist
 ;;            to alist to make customization easier.
+;;            Make code comply with (some) Emacs Lisp Code Conventions:
+;;            - added public function to unload hook
 
 
 ;;; Code:
@@ -130,6 +134,11 @@ Special `notheme' theme can be used to disable all loaded themes."
          (t
           (load-theme theme t)))
         (setq pbt/current-theme theme)))))
+
+(defun per-buffer-theme/unload-hook ()
+  "Disable `per-buffer-theme' package."
+  (interactive)
+  (remove-hook 'window-configuration-change-hook 'per-buffer-theme/change-theme-if-buffer-matches))
 
 ;;; Hooks and key bindings
 (add-hook 'window-configuration-change-hook 'per-buffer-theme/change-theme-if-buffer-matches)
