@@ -102,7 +102,7 @@ Special `notheme' theme can be used to unload all themes."
         ;; (message "Theme: %s" (prin1-to-string theme))
         ;; (message "    Buffer names: %s" (prin1-to-string buffernames))
         ;; (message "    Major modes: %s" (prin1-to-string modes))
-        (when (cl-some (lambda (regex) (string-match regex (buffer-name))) buffernames)
+        (when (and (car buffernames) (cl-some (lambda (regex) (string-match regex (buffer-name))) buffernames))
           ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name)) theme)
           (setq newtheme theme
                 alist nil))
@@ -124,6 +124,7 @@ Special `notheme' theme can be used to disable all loaded themes."
   (interactive)
   (unless (cl-some (lambda (regex) (string-match regex (buffer-name))) per-buffer-theme/ignored-buffernames-regex)
     (let ((theme (pbt~match-theme)))
+      ;; (message "=> Returned theme: %s " (prin1-to-string theme))
       (unless (equal pbt/current-theme theme)
         (cond
          ((equal theme 'notheme)
