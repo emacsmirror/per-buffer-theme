@@ -1,10 +1,10 @@
-===================
+OB===================
 per-buffer-theme.el
 ===================
 
 :Author: Iñigo Serna, inigoserna AT gmail DOT com
 
-:Version: 1.0, April 12th. 2015
+:Version: 1.2, September 25th. 2015
 
 :Home page: https://bitbucket/inigoserna/per-buffer-theme.el
 
@@ -23,7 +23,7 @@ Change theme according to active buffer name or major mode.
 *per-buffer-theme.el* is an Emacs library that automatically changes
 the global theme according to buffer name or major mode.
 
-It runs through *window-configuration-change-hook* so it is not perfect.
+It runs as a function advice to *select-window* so it is not perfect.
 
 If buffer name matches any of *per-buffer-theme/ignored-buffernames-regex*
 no theme change occurs.
