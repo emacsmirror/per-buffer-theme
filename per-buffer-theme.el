@@ -4,7 +4,7 @@
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
 ;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
-;; Version: 1.1
+;; Version: 1.2
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -49,6 +49,7 @@
 ;;            to alist to make customization easier.
 ;;            Make code comply with (some) Emacs Lisp Code Conventions:
 ;;            - added public function to unload hook
+;; 2015/09/25 Use advice function instead of hooks, it's more robust.
 
 
 ;;; Code:
@@ -87,9 +88,10 @@ Special `notheme' theme can be used to unload all themes."
   :type '(repeat alist)
   :group 'per-buffer-theme)
 
+
 ;;; Internal functions
-(defun pbt~match-theme ()
-  "Return theme if buffer name or major-mode match in
+(defun pbt~match-theme (buffer)
+  "Return theme if BUFFER name or major-mode match in
 `per-buffer-theme/themes-alist' or nil."
   (let ((alist per-buffer-theme/themes-alist)
         newtheme)
@@ -102,8 +104,8 @@ Special `notheme' theme can be used to unload all themes."
         ;; (message "Theme: %s" (prin1-to-string theme))
         ;; (message "    Buffer names: %s" (prin1-to-string buffernames))
         ;; (message "    Major modes: %s" (prin1-to-string modes))
-        (when (and (car buffernames) (cl-some (lambda (regex) (string-match regex (buffer-name))) buffernames))
-          ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name)) theme)
+        (when (and (car buffernames) (cl-some (lambda (regex) (string-match regex (buffer-name buffer))) buffernames))
+          ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name buffer)) theme)
           (setq newtheme theme
                 alist nil))
         (when (member major-mode modes)
@@ -113,8 +115,8 @@ Special `notheme' theme can be used to unload all themes."
     newtheme))
 
 ;;; Public interface
-(defun per-buffer-theme/change-theme-if-buffer-matches ()
-  "Change theme according to active buffer major mode or name.
+(defun per-buffer-theme/change-theme-if-buffer-matches (&optional buffer)
+  "Change theme according to BUFFER major mode or name.
 Don't do anything if buffer name matches in
 `per-buffer-theme/ignored-buffernames-regex'.
 Search for theme matches in `per-buffer-theme/themes-alist'
@@ -122,8 +124,9 @@ customizable variable.
 If none is found uses default theme stored in `per-buffer-theme/default-theme'.
 Special `notheme' theme can be used to disable all loaded themes."
   (interactive)
-  (unless (cl-some (lambda (regex) (string-match regex (buffer-name))) per-buffer-theme/ignored-buffernames-regex)
-    (let ((theme (pbt~match-theme)))
+  (setq buffer (or buffer (current-buffer)))
+  (unless (cl-some (lambda (regex) (string-match regex (buffer-name buffer))) per-buffer-theme/ignored-buffernames-regex)
+    (let ((theme (pbt~match-theme buffer)))
       ;; (message "=> Returned theme: %s " (prin1-to-string theme))
       (unless (equal pbt/current-theme theme)
         (cond
@@ -135,13 +138,28 @@ Special `notheme' theme can be used to disable all loaded themes."
           (load-theme theme t)))
         (setq pbt/current-theme theme)))))
 
-(defun per-buffer-theme/unload-hook ()
+
+;;; Initialiation
+(defun per-buffer-theme/advice-function (window &optional norecord)
+  "Advice function to `select-window'."
+  (let ((buffer (window-buffer window)))
+    (per-buffer-theme/change-theme-if-buffer-matches buffer)))
+
+;;;###autoload
+(defun per-buffer-theme/enable ()
+  "Enable `per-buffer-theme' package."
+  (interactive)
+  (advice-add 'select-window :before 'per-buffer-theme/advice-function)
+  (message "per-buffer-theme package activated."))
+
+;;;###autoload
+(defun per-buffer-theme/disable ()
   "Disable `per-buffer-theme' package."
   (interactive)
-  (remove-hook 'window-configuration-change-hook 'per-buffer-theme/change-theme-if-buffer-matches))
+  (advice-remove 'select-window 'per-buffer-theme/advice-function)
+  (message "per-buffer-theme package disabled."))
 
-;;; Hooks and key bindings
-(add-hook 'window-configuration-change-hook 'per-buffer-theme/change-theme-if-buffer-matches)
+(per-buffer-theme/enable)
 ;; (global-set-key '[C-f3] 'per-buffer-theme/change-theme-if-buffer-matches)
 
 (provide 'per-buffer-theme)
