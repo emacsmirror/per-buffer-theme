@@ -4,7 +4,7 @@
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
 ;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
-;; Version: 1.2
+;; Version: 1.3
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -50,6 +50,8 @@
 ;;            Make code comply with (some) Emacs Lisp Code Conventions:
 ;;            - added public function to unload hook
 ;; 2015/09/25 Use advice function instead of hooks, it's more robust.
+;; 2015/10/13 As themes are cumulative, remove previous theme definitions
+;;            before applying new one
 
 
 ;;; Code:
@@ -66,7 +68,7 @@
   :prefix "per-buffer-theme/"
   :group 'customize)
 
-(defcustom per-buffer-theme/default-theme 'inigo
+(defcustom per-buffer-theme/default-theme 'deeper-blue
   "Default theme to be used if no matching is found."
   :type 'symbol
   :group 'per-buffer-theme)
@@ -129,9 +131,11 @@ Special `notheme' theme can be used to disable all loaded themes."
     (let ((theme (pbt~match-theme buffer)))
       ;; (message "=> Returned theme: %s " (prin1-to-string theme))
       (unless (equal pbt/current-theme theme)
+        ; as themes are cumulative, remove previous theme definitions before applying new one
+        (mapc #'disable-theme custom-enabled-themes)
         (cond
          ((equal theme 'notheme)
-          (mapc #'disable-theme custom-enabled-themes))
+          t) ; mapc #'disable... already executed above
          ((equal theme nil)
           (load-theme per-buffer-theme/default-theme t))
          (t
@@ -142,8 +146,7 @@ Special `notheme' theme can be used to disable all loaded themes."
 ;;; Initialiation
 (defun per-buffer-theme/advice-function (window &optional norecord)
   "Advice function to `select-window'."
-  (let ((buffer (window-buffer window)))
-    (per-buffer-theme/change-theme-if-buffer-matches buffer)))
+  (per-buffer-theme/change-theme-if-buffer-matches (window-buffer window)))
 
 ;;;###autoload
 (defun per-buffer-theme/enable ()
