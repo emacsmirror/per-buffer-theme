@@ -4,11 +4,11 @@ per-buffer-theme.el
 
 :Author: Iñigo Serna, inigoserna AT gmail DOT com
 
-:Version: 1.3, October 13th. 2015
+:Version: 1.4, March 18th. 2015
 
 :Home page: https://bitbucket/inigoserna/per-buffer-theme.el
 
-:License: | Copyright © 2015, Iñigo Serna
+:License: | Copyright © 2015-6, Iñigo Serna
           | This program is free software; you can redistribute it and/or modify
           | it under the terms of the GNU General Public License as published by
           | the Free Software Foundation, either version 3 of the License, or
@@ -34,5 +34,5 @@ association between themes and buffer name or major modes.
 Special *notheme* theme can be used to make unload all themes and use
 emacs default theme.
 
-If no theme matches then it'll load the theme stored in
+If no theme matches then it will load the theme stored in
 *per-buffer-theme/default-theme*.

@@ -1,10 +1,10 @@
 ;;; per-buffer-theme.el --- Change theme according to buffer name or major mode.
 
-;; Copyright (C) 2015 Free Software Foundation, Inc.
+;; Copyright (C) 2015-6 Free Software Foundation, Inc.
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
 ;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
-;; Version: 1.3
+;; Version: 1.4
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -28,7 +28,7 @@
 ;; `per-buffer-theme.el' is an Emacs library that automatically changes
 ;; the global theme according to buffer name or major mode.
 ;;
-;; It runs through `window-configuration-change-hook' so it is not perfect.
+;; It runs as a function advice to `select-window' so it is not perfect.
 ;;
 ;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
 ;; no theme change occurs.
@@ -39,7 +39,7 @@
 ;; Special `notheme' theme can be used to make unload all themes and use emacs
 ;; default theme.
 ;;
-;; If no theme matches then it'll load the theme stored in
+;; If no theme matches then it will load the theme stored in
 ;; `per-buffer-theme/default-theme'.
 
 ;;; Updates:
@@ -51,7 +51,9 @@
 ;;            - added public function to unload hook
 ;; 2015/09/25 Use advice function instead of hooks, it's more robust.
 ;; 2015/10/13 As themes are cumulative, remove previous theme definitions
-;;            before applying new one
+;;            before applying new one.
+;; 2016/03/18 Don't update theme if temporary or hidden buffers.
+;;            Thanks to Clément Pit--Claudel for the suggestions.
 
 
 ;;; Code:
@@ -127,9 +129,13 @@ If none is found uses default theme stored in `per-buffer-theme/default-theme'.
 Special `notheme' theme can be used to disable all loaded themes."
   (interactive)
   (setq buffer (or buffer (current-buffer)))
-  (unless (cl-some (lambda (regex) (string-match regex (buffer-name buffer))) per-buffer-theme/ignored-buffernames-regex)
-    (let ((theme (pbt~match-theme buffer)))
-      ;; (message "=> Returned theme: %s " (prin1-to-string theme))
+  (let ((bufname (buffer-name buffer))
+        theme)
+    (when (and (not (string-prefix-p " " bufname))
+               (get-buffer-window buffer)
+               (cl-notany (lambda (regex) (string-match regex bufname)) per-buffer-theme/ignored-buffernames-regex))
+      (setq theme (pbt~match-theme buffer))
+      ;; (message "=> Returned theme: %S" theme)
       (unless (equal pbt/current-theme theme)
         ; as themes are cumulative, remove previous theme definitions before applying new one
         (mapc #'disable-theme custom-enabled-themes)
