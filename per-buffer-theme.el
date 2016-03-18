@@ -4,7 +4,7 @@
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
 ;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
-;; Version: 1.4
+;; Version: 1.5
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -28,19 +28,28 @@
 ;; `per-buffer-theme.el' is an Emacs library that automatically changes
 ;; the global theme according to buffer name or major mode.
 ;;
-;; It runs as a function advice to `select-window' so it is not perfect.
-;;
 ;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
 ;; no theme change occurs.
 ;;
 ;; Customizable variable `per-buffer-theme/themes-alist' contains the
 ;; association between themes and buffer name or major modes.
 ;;
-;; Special `notheme' theme can be used to make unload all themes and use emacs
-;; default theme.
+;; Special `notheme' theme name can be used to make unload all themes and use
+;; Emacs default theme.
 ;;
 ;; If no theme matches then it will load the theme stored in
-;; `per-buffer-theme/default-theme'.
+;; `per-buffer-theme/default-theme' variable.
+;;
+;; There are two different methods in which buffer and theme can be checked.
+;; It is controlled by customizable boolean `per-buffer-theme/use-timer':
+;;
+;; - 't' will use a timer, triggered every `per-buffer-theme/timer-idle-delay'
+;;   seconds.  This is the default as it works smoothly.
+;;   If it slows down Emacs a bit choose a bigger delay value.
+;;
+;; - 'nil' uses a function advice to `select-window' so it could introduce
+;;   some Emacs windows flickering when switching buffers due to how
+;;   `select-window' internally works.
 
 ;;; Updates:
 
@@ -53,7 +62,8 @@
 ;; 2015/10/13 As themes are cumulative, remove previous theme definitions
 ;;            before applying new one.
 ;; 2016/03/18 Don't update theme if temporary or hidden buffers.
-;;            Thanks to Clément Pit--Claudel for the suggestions.
+;;            Added alternative timer-base method to check buffer and theme.
+;;            Thanks to Clément Pit--Claudel and T.V. Raman for the suggestions.
 
 
 ;;; Code:
@@ -90,6 +100,16 @@
   "An alist with default associations (theme buffernames modes).
 Special `notheme' theme can be used to unload all themes."
   :type '(repeat alist)
+  :group 'per-buffer-theme)
+
+(defcustom per-buffer-theme/use-timer t
+  "Use timer (t, default) or check buffer when switching (nil)."
+  :type 'boolean
+  :group 'per-buffer-theme)
+
+(defcustom per-buffer-theme/timer-idle-delay 0.5
+  "Number of seconds between buffer and theme checks."
+  :type 'float
   :group 'per-buffer-theme)
 
 
@@ -150,6 +170,9 @@ Special `notheme' theme can be used to disable all loaded themes."
 
 
 ;;; Initialiation
+(defvar pbt~timer nil
+  "Private variable to store idle timer.")
+
 (defun per-buffer-theme/advice-function (window &optional norecord)
   "Advice function to `select-window'."
   (per-buffer-theme/change-theme-if-buffer-matches (window-buffer window)))
@@ -158,14 +181,20 @@ Special `notheme' theme can be used to disable all loaded themes."
 (defun per-buffer-theme/enable ()
   "Enable `per-buffer-theme' package."
   (interactive)
-  (advice-add 'select-window :before 'per-buffer-theme/advice-function)
+  (if per-buffer-theme/use-timer
+      (setq pbt~timer (run-with-idle-timer per-buffer-theme/timer-idle-delay t #'per-buffer-theme/change-theme-if-buffer-matches))
+    (advice-add 'select-window :before 'per-buffer-theme/advice-function))
   (message "per-buffer-theme package activated."))
 
 ;;;###autoload
 (defun per-buffer-theme/disable ()
   "Disable `per-buffer-theme' package."
   (interactive)
-  (advice-remove 'select-window 'per-buffer-theme/advice-function)
+  (if per-buffer-theme/use-timer
+      (progn
+        (cancel-timer pbt~timer)
+        (setq pbt~timer nil))
+    (advice-remove 'select-window 'per-buffer-theme/advice-function))
   (message "per-buffer-theme package disabled."))
 
 (per-buffer-theme/enable)
