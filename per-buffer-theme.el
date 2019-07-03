@@ -1,10 +1,10 @@
 ;;; per-buffer-theme.el --- Change theme according to buffer name or major mode.
 
-;; Copyright (C) 2015-6 Free Software Foundation, Inc.
+;; Copyright (C) 2015-9 Free Software Foundation, Inc.
 
 ;; Author: Iñigo Serna <inigoserna@gmail.com>
 ;; URL: https://bitbucket.com/inigoserna/per-buffer-theme.el
-;; Version: 1.5
+;; Version: 1.6
 ;; Keywords: themes
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -62,9 +62,10 @@
 ;; 2015/10/13 As themes are cumulative, remove previous theme definitions
 ;;            before applying new one.
 ;; 2016/03/18 Don't update theme if temporary or hidden buffers.
-;;            Added alternative timer-base method to check buffer and theme.
+;;            Added alternative timer-based method to check buffer and theme.
 ;;            Thanks to Clément Pit--Claudel and T.V. Raman for the suggestions.
-
+;; 2019/07/03 Fix behaviour when notheme used as default-theme.
+;;            Thanks to Andrea Greselin for report and fix.
 
 ;;; Code:
 (require 'cl-lib)
@@ -163,7 +164,8 @@ Special `notheme' theme can be used to disable all loaded themes."
          ((equal theme 'notheme)
           t) ; mapc #'disable... already executed above
          ((equal theme nil)
-          (load-theme per-buffer-theme/default-theme t))
+          (unless (equal per-buffer-theme/default-theme 'notheme)
+            (load-theme per-buffer-theme/default-theme t)))
          (t
           (load-theme theme t)))
         (setq pbt/current-theme theme)))))
