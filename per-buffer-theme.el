@@ -1,6 +1,6 @@
-;;; per-buffer-theme.el --- Change theme according to buffer name or major mode.
+;;; per-buffer-theme.el --- Change theme and font according to buffer name or major mode.  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2015-9 Free Software Foundation, Inc.
+;; Copyright (C) 2015-20 Free Software Foundation, Inc.
 
 ;; Author: Iñigo Serna <inigoserna@gmx.com>
 ;; URL: https://hg.serna.eu/emacs/per-buffer-theme
@@ -26,10 +26,10 @@
 ;;; Commentary:
 
 ;; `per-buffer-theme.el' is an Emacs library that automatically changes
-;; the global theme according to buffer name or major mode.
+;; the global theme and frame font according to buffer name or major mode.
 ;;
 ;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
-;; no theme change occurs.
+;; no theme or font change occurs.
 ;;
 ;; Customizable variable `per-buffer-theme/themes-alist' contains the
 ;; association between themes and buffer name or major modes.
@@ -39,6 +39,9 @@
 ;;
 ;; If no theme matches then it will load the theme stored in
 ;; `per-buffer-theme/default-theme' variable.
+;;
+;; If no theme matches then it will set the font stored in
+;; `per-buffer-theme/default-font' variable, or the default font.
 ;;
 ;; There are two different methods in which buffer and theme can be checked.
 ;; It is controlled by customizable boolean `per-buffer-theme/use-timer':
@@ -50,6 +53,7 @@
 ;; - 'nil' uses a function advice to `select-window' so it could introduce
 ;;   some Emacs windows flickering when switching buffers due to how
 ;;   `select-window' internally works.
+
 
 ;;; Updates:
 
@@ -66,9 +70,10 @@
 ;;            Thanks to Clément Pit--Claudel and T.V. Raman for the suggestions.
 ;; 2019/07/03 Fix behaviour when notheme used as default-theme.
 ;;            Thanks to Andrea Greselin for report and fix.
+;; 2020/05/27 Added font support.
+
 
 ;;; Code:
-(require 'cl-lib)
 
 ;;; Variables
 (defvar pbt/current-theme nil
@@ -86,6 +91,11 @@
   :type 'symbol
   :group 'per-buffer-theme)
 
+(defcustom per-buffer-theme/default-font nil
+  "Default font to be used if no matching is found."
+  :type 'string
+  :group 'per-buffer-theme)
+
 (defcustom per-buffer-theme/ignored-buffernames-regex '("*[Mm]ini" "*[Hh]elm" "*[Oo]rg" "*[Cc]alendar" "*[Cc]alc" "*SPEEDBAR*" "*NeoTree*")
   "If current buffer name matches one of these it won't change the theme."
   :type '(repeat string)
@@ -93,12 +103,14 @@
 
 (defcustom per-buffer-theme/themes-alist
       '(((:theme . notheme)
-         (:buffernames . ("*eww" "*w3m" "*mu4e"))
+         (:font . nil)
+         (:buffernames . ("*info" "*eww" "*w3m" "*mu4e"))
          (:modes . (eww-mode w3m-mode cfw:calendar-mode mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
         ((:theme . adwaita)
+         (:font . nil)
          (:buffernames . ("*Help*"))
          (:modes . (nil))))
-  "An alist with default associations (theme buffernames modes).
+  "An alist with default associations (theme font buffernames modes).
 Special `notheme' theme can be used to unload all themes."
   :type '(repeat alist)
   :group 'per-buffer-theme)
@@ -115,33 +127,41 @@ Special `notheme' theme can be used to unload all themes."
 
 
 ;;; Internal functions
+(defvar pbt~initial-font nil
+  "Initial font.")
+
 (defun pbt~match-theme (buffer)
-  "Return theme if BUFFER name or major-mode match in
+  "Return (theme font) if BUFFER name or major-mode match in
 `per-buffer-theme/themes-alist' or nil."
   (let ((alist per-buffer-theme/themes-alist)
-        newtheme)
+        newtheme
+        newfont)
     ;; (message "THEMES: %s" (prin1-to-string alist))
     (while alist
       (let* ((elm (pop alist))
              (theme (cdr (assoc :theme elm)))
+             (font (cdr (assoc :font elm)))
              (buffernames (cdr (assoc :buffernames elm)))
              (modes (cdr (assoc :modes elm))))
         ;; (message "Theme: %s" (prin1-to-string theme))
+        ;; (message "Font:  %s" (prin1-to-string font))
         ;; (message "    Buffer names: %s" (prin1-to-string buffernames))
         ;; (message "    Major modes: %s" (prin1-to-string modes))
         (when (and (car buffernames) (cl-some (lambda (regex) (string-match regex (buffer-name buffer))) buffernames))
           ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name buffer)) theme)
           (setq newtheme theme
+                newfont font
                 alist nil))
         (when (member major-mode modes)
-          ;; (message "=> Matched with major mode '%s' => Theme: %s " major-mode theme)
+          ;; (message "=> Matched with major mode '%s' => Theme: %s | Font: %S" major-mode theme font)
           (setq newtheme theme
+                newfont font
                 alist nil))))
-    newtheme))
+    (list (cons :theme newtheme) (cons :font newfont))))
 
 ;;; Public interface
 (defun per-buffer-theme/change-theme-if-buffer-matches (&optional buffer)
-  "Change theme according to BUFFER major mode or name.
+  "Change theme and font according to BUFFER major mode or name.
 Don't do anything if buffer name matches in
 `per-buffer-theme/ignored-buffernames-regex'.
 Search for theme matches in `per-buffer-theme/themes-alist'
@@ -150,25 +170,28 @@ If none is found uses default theme stored in `per-buffer-theme/default-theme'.
 Special `notheme' theme can be used to disable all loaded themes."
   (interactive)
   (setq buffer (or buffer (current-buffer)))
-  (let ((bufname (buffer-name buffer))
-        theme)
-    (when (and (not (string-prefix-p " " bufname))
-               (get-buffer-window buffer)
-               (cl-notany (lambda (regex) (string-match regex bufname)) per-buffer-theme/ignored-buffernames-regex))
-      (setq theme (pbt~match-theme buffer))
-      ;; (message "=> Returned theme: %S" theme)
-      (unless (equal pbt/current-theme theme)
-        ; as themes are cumulative, remove previous theme definitions before applying new one
-        (mapc #'disable-theme custom-enabled-themes)
-        (cond
-         ((equal theme 'notheme)
-          t) ; mapc #'disable... already executed above
-         ((equal theme nil)
-          (unless (equal per-buffer-theme/default-theme 'notheme)
-            (load-theme per-buffer-theme/default-theme t)))
-         (t
-          (load-theme theme t)))
-        (setq pbt/current-theme theme)))))
+  (let ((bufname (buffer-name buffer)))
+    (when (and (get-buffer-window buffer)
+               (not (string-prefix-p " " bufname))
+               (not (seq-some #'(lambda (regex) (string-match regex bufname)) per-buffer-theme/ignored-buffernames-regex)))
+      (let* ((res (pbt~match-theme buffer))
+             (theme (cdr (assoc :theme res)))
+             (font (cdr (assoc :font res))))
+        ;; (message "=> Returned theme: %S | font: %S" theme font)
+        (unless (equal pbt~current-theme theme)
+          ; as themes are cumulative, remove previous theme definitions before applying new one
+          (mapc #'disable-theme custom-enabled-themes)
+          (cond
+           ((equal theme 'notheme)
+            t) ; mapc #'disable... already executed above
+           ((equal theme nil)
+            (unless (equal per-buffer-theme/default-theme 'notheme)
+              (load-theme per-buffer-theme/default-theme t)))
+           (t
+            (load-theme theme t)))
+          (setq pbt~current-theme theme))
+        (when (display-graphic-p)
+          (set-frame-font (or font per-buffer-theme/default-font pbt~initial-font)))))))
 
 
 ;;; Initialiation
@@ -203,4 +226,5 @@ Special `notheme' theme can be used to disable all loaded themes."
 ;; (global-set-key '[C-f3] 'per-buffer-theme/change-theme-if-buffer-matches)
 
 (provide 'per-buffer-theme)
+
 ;;; per-buffer-theme.el ends here
