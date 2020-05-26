@@ -4,11 +4,11 @@ per-buffer-theme.el
 
 :Author: Iñigo Serna, inigoserna AT gmx DOT com
 
-:Version: 1.7, November 1st. 2019
+:Version: 2.0, May 27th. 2020
 
 :Home page: https://hg.serna.eu/emacs/per-buffer-theme.el
 
-:License: | Copyright © 2015-9, Iñigo Serna
+:License: | Copyright © 2015-20, Iñigo Serna
           | This program is free software; you can redistribute it and/or modify
           | it under the terms of the GNU General Public License as published by
           | the Free Software Foundation, either version 3 of the License, or
@@ -18,13 +18,13 @@ per-buffer-theme.el
 
 per-buffer-theme.el
 ===================
-Change theme according to active buffer name or major mode.
+Change theme and font according to active buffer name or major mode.
 
 *per-buffer-theme.el* is an Emacs library that automatically changes
-the global theme according to buffer name or major mode.
+the global theme and frame font according to buffer name or major mode.
 
 If buffer name matches any of *per-buffer-theme/ignored-buffernames-regex*
-no theme change occurs.
+no theme or font change occurs.
 
 Customizable variable *per-buffer-theme/themes-alist* contains the
 association between themes and buffer name or major modes.
@@ -34,6 +34,9 @@ Emacs default theme.
 
 If no theme matches then it will load the theme stored in
 *per-buffer-theme/default-theme* variable.
+
+If no theme matches then it will set the font stored in
+`per-buffer-theme/default-font' variable, or the default font.
 
 There are two different methods in which buffer and theme can be checked.
 It is controlled by customizable boolean *per-buffer-theme/use-timer*:
