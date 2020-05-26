@@ -6,7 +6,7 @@
 ;; URL: https://hg.serna.eu/emacs/per-buffer-theme
 ;; Version: 1.7
 ;; Keywords: themes
-;; Package-Requires: ((cl-lib "0.5"))
+;; Package-Requires: ((emacs "25.1")
 
 ;; This file is not part of GNU Emacs.
 
@@ -71,13 +71,12 @@
 ;; 2019/07/03 Fix behaviour when notheme used as default-theme.
 ;;            Thanks to Andrea Greselin for report and fix.
 ;; 2020/05/27 Added font support.
+;;            Defined as minor-mode.
+;;            Cleaned code. Removed cl-lib dependency.
 
 
 ;;; Code:
 
-;;; Variables
-(defvar pbt/current-theme nil
-  "Theme in use.")
 
 ;;; Customization
 (defgroup per-buffer-theme nil
@@ -86,7 +85,7 @@
   :prefix "per-buffer-theme/"
   :group 'customize)
 
-(defcustom per-buffer-theme/default-theme 'deeper-blue
+(defcustom per-buffer-theme/default-theme 'leuven
   "Default theme to be used if no matching is found."
   :type 'symbol
   :group 'per-buffer-theme)
@@ -126,10 +125,18 @@ Special `notheme' theme can be used to unload all themes."
   :group 'per-buffer-theme)
 
 
-;;; Internal functions
+;;; Variables
+(defvar pbt~current-theme nil
+  "Theme in use.")
+
 (defvar pbt~initial-font nil
   "Initial font.")
 
+(defvar pbt~timer nil
+  "Private variable to store idle timer.")
+
+
+;;; Functions
 (defun pbt~match-theme (buffer)
   "Return (theme font) if BUFFER name or major-mode match in
 `per-buffer-theme/themes-alist' or nil."
@@ -146,9 +153,9 @@ Special `notheme' theme can be used to unload all themes."
         ;; (message "Theme: %s" (prin1-to-string theme))
         ;; (message "Font:  %s" (prin1-to-string font))
         ;; (message "    Buffer names: %s" (prin1-to-string buffernames))
-        ;; (message "    Major modes: %s" (prin1-to-string modes))
-        (when (and (car buffernames) (cl-some (lambda (regex) (string-match regex (buffer-name buffer))) buffernames))
-          ;; (message "=> Matched buffer name with regex '%s' => Theme: %s " (match-string 0 (buffer-name buffer)) theme)
+        ;; (message "    Major modes:  %s" (prin1-to-string modes))
+        (when (and (car buffernames) (seq-some #'(lambda (regex) (string-match regex (buffer-name buffer))) buffernames))
+          ;; (message "=> Matched buffer name with regex '%s' => Theme: %s | Font: %S" (match-string 0 (buffer-name buffer)) theme font)
           (setq newtheme theme
                 newfont font
                 alist nil))
@@ -159,7 +166,6 @@ Special `notheme' theme can be used to unload all themes."
                 alist nil))))
     (list (cons :theme newtheme) (cons :font newfont))))
 
-;;; Public interface
 (defun per-buffer-theme/change-theme-if-buffer-matches (&optional buffer)
   "Change theme and font according to BUFFER major mode or name.
 Don't do anything if buffer name matches in
@@ -195,35 +201,50 @@ Special `notheme' theme can be used to disable all loaded themes."
 
 
 ;;; Initialiation
-(defvar pbt~timer nil
-  "Private variable to store idle timer.")
-
-(defun per-buffer-theme/advice-function (window &optional norecord)
+(defun pbt~advice-function (window &optional norecord)
   "Advice function to `select-window'."
   (per-buffer-theme/change-theme-if-buffer-matches (window-buffer window)))
 
-;;;###autoload
-(defun per-buffer-theme/enable ()
+(defun pbt~enable ()
   "Enable `per-buffer-theme' package."
-  (interactive)
   (if per-buffer-theme/use-timer
       (setq pbt~timer (run-with-idle-timer per-buffer-theme/timer-idle-delay t #'per-buffer-theme/change-theme-if-buffer-matches))
-    (advice-add 'select-window :before 'per-buffer-theme/advice-function))
-  (message "per-buffer-theme package activated."))
+    (advice-add 'select-window :before 'pbt~advice-function))
+  (message "per-buffer-theme enabled."))
+
+(defun pbt~disable ()
+  "Disable `per-buffer-theme' package."
+  (if per-buffer-theme/use-timer
+      (when (timerp pbt~timer)
+        (cancel-timer pbt~timer)
+        (setq pbt~timer nil))
+    (advice-remove 'select-window 'pbt~advice-function))
+  (message "per-buffer-theme disabled."))
+
+;;;###autoload
+(defun per-buffer-theme/enable ()
+  "Deprecated, please use `per-buffer-theme-mode'."
+  (interactive)
+  (per-buffer-theme-mode 1)
+  (error "This command is deprecated, please use `per-buffer-theme-mode'."))
 
 ;;;###autoload
 (defun per-buffer-theme/disable ()
-  "Disable `per-buffer-theme' package."
+  "Deprecated, please use `per-buffer-theme-mode'."
   (interactive)
-  (if per-buffer-theme/use-timer
-      (progn
-        (cancel-timer pbt~timer)
-        (setq pbt~timer nil))
-    (advice-remove 'select-window 'per-buffer-theme/advice-function))
-  (message "per-buffer-theme package disabled."))
+  (per-buffer-theme-mode -1)
+  (error "This command is deprecated, please use `per-buffer-theme-mode'."))
 
-(per-buffer-theme/enable)
-;; (global-set-key '[C-f3] 'per-buffer-theme/change-theme-if-buffer-matches)
+;;;###autoload
+(define-minor-mode per-buffer-theme-mode
+  "Changes theme and/or font according to buffer name or major mode."
+  :init-value nil
+  :global nil
+  :lighter " Per buffer theme"
+  (if (not per-buffer-theme-mode)
+      (pbt~disable)
+    (setq pbt~initial-font (frame-parameter nil 'font-parameter))
+    (pbt~enable)))
 
 (provide 'per-buffer-theme)
 
