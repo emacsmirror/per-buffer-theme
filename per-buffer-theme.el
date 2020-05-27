@@ -23,10 +23,14 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 ;;; Commentary:
 
 ;; `per-buffer-theme.el' is an Emacs library that automatically changes
 ;; the global theme and frame font according to buffer name or major mode.
+;;
+;; Run the command `per-buffer-theme-mode' to toggle the minor-mode which
+;; enables or disables the package.
 ;;
 ;; If buffer name matches any of `per-buffer-theme/ignored-buffernames-regex'
 ;; no theme or font change occurs.
@@ -34,13 +38,11 @@
 ;; Customizable variable `per-buffer-theme/themes-alist' contains the
 ;; association between themes and buffer name or major modes.
 ;;
-;; Special `notheme' theme name can be used to make unload all themes and use
-;; Emacs default theme.
+;; Special `notheme' theme name can be used to force the unload all themes
+;; and use Emacs default theme.
 ;;
-;; If no theme matches then it will load the theme stored in
-;; `per-buffer-theme/default-theme' variable.
-;;
-;; If no theme matches then it will set the font stored in
+;; If there aren't any matches then it will load the theme stored in
+;; `per-buffer-theme/default-theme' variable and the font stored in
 ;; `per-buffer-theme/default-font' variable, or the default font.
 ;;
 ;; There are two different methods in which buffer and theme can be checked.
@@ -101,16 +103,17 @@
   :group 'per-buffer-theme)
 
 (defcustom per-buffer-theme/themes-alist
-      '(((:theme . notheme)
+      '(((:theme . adwaita)
          (:font . nil)
          (:buffernames . ("*info" "*eww" "*w3m" "*mu4e"))
          (:modes . (eww-mode w3m-mode cfw:calendar-mode mu4e-main-mode mu4e-headers-mode mu4e-view-mode mu4e-compose-mode mu4e-about-mode mu4e-update-mode)))
-        ((:theme . adwaita)
+        ((:theme . notheme)
          (:font . nil)
          (:buffernames . ("*Help*"))
          (:modes . (nil))))
   "An alist with default associations (theme font buffernames modes).
-Special `notheme' theme can be used to unload all themes."
+Special `notheme' theme can be used to unload all themes and use Emacs
+default theme."
   :type '(repeat alist)
   :group 'per-buffer-theme)
 
