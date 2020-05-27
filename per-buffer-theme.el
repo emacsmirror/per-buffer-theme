@@ -4,7 +4,7 @@
 
 ;; Author: Iñigo Serna <inigoserna@gmx.com>
 ;; URL: https://hg.serna.eu/emacs/per-buffer-theme
-;; Version: 2.0
+;; Version: 2.1
 ;; Keywords: themes
 ;; Package-Requires: ((emacs "25.1")
 
@@ -229,14 +229,14 @@ Special `notheme' theme can be used to disable all loaded themes."
   "Deprecated, please use `per-buffer-theme-mode'."
   (interactive)
   (per-buffer-theme-mode 1)
-  (error "This command is deprecated, please use `per-buffer-theme-mode'."))
+  (error "This command is deprecated, please use `per-buffer-theme-mode'"))
 
 ;;;###autoload
 (defun per-buffer-theme/disable ()
   "Deprecated, please use `per-buffer-theme-mode'."
   (interactive)
   (per-buffer-theme-mode -1)
-  (error "This command is deprecated, please use `per-buffer-theme-mode'."))
+  (error "This command is deprecated, please use `per-buffer-theme-mode'"))
 
 ;;;###autoload
 (define-minor-mode per-buffer-theme-mode
@@ -244,10 +244,14 @@ Special `notheme' theme can be used to disable all loaded themes."
   :init-value nil
   :global nil
   :lighter " Per buffer theme"
-  (if (not per-buffer-theme-mode)
-      (pbt~disable)
-    (setq pbt~initial-font (frame-parameter nil 'font-parameter))
-    (pbt~enable)))
+  (if per-buffer-theme-mode
+      (progn
+        (setq pbt~initial-font (frame-parameter nil 'font-parameter))
+        (pbt~enable))
+    (pbt~disable)
+    (when pbt~initial-font
+      (set-frame-font pbt~initial-font))))
+
 
 (provide 'per-buffer-theme)
 
