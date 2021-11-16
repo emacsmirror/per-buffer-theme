@@ -210,7 +210,7 @@ Special `notheme' theme can be used to disable all loaded themes."
 
 (defun pbt~enable ()
   "Enable `per-buffer-theme' package."
-  (if per-buffer-theme/use-timer
+  (if (and per-buffer-theme/use-timer (not pbt~timer))
       (setq pbt~timer (run-with-idle-timer per-buffer-theme/timer-idle-delay t #'per-buffer-theme/change-theme-if-buffer-matches))
     (advice-add 'select-window :before 'pbt~advice-function))
   (message "per-buffer-theme enabled."))
@@ -242,7 +242,7 @@ Special `notheme' theme can be used to disable all loaded themes."
 (define-minor-mode per-buffer-theme-mode
   "Changes theme and/or font according to buffer name or major mode."
   :init-value nil
-  :global nil
+  :global t
   :lighter " Per buffer theme"
   (if per-buffer-theme-mode
       (progn

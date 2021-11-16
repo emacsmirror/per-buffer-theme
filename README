@@ -6,9 +6,9 @@ per-buffer-theme.el
 
 :Version: 2.1, May 27th. 2020
 
-:Home page: https://hg.serna.eu/emacs/per-buffer-theme.el
+:Home page: https://hg.serna.eu/emacs/per-buffer-theme
 
-:License: | Copyright © 2015-20, Iñigo Serna
+:License: | Copyright © 2015-21, Iñigo Serna
           | This program is free software; you can redistribute it and/or modify
           | it under the terms of the GNU General Public License as published by
           | the Free Software Foundation, either version 3 of the License, or
