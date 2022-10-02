@@ -1,12 +1,12 @@
 ;;; per-buffer-theme.el --- Change theme and font according to buffer name or major mode.  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2015-20 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
 ;; Author: Iñigo Serna <inigoserna@gmx.com>
 ;; URL: https://hg.serna.eu/emacs/per-buffer-theme
 ;; Version: 2.1
 ;; Keywords: themes
-;; Package-Requires: ((emacs "25.1")
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -75,6 +75,7 @@
 ;; 2020/05/27 Added font support.
 ;;            Defined as minor-mode.
 ;;            Cleaned code. Removed cl-lib dependency.
+;; 2022/10/02 Fixed some typos in headers which prevent building MELPA package.
 
 
 ;;; Code:
